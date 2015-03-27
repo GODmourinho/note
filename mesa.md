@@ -68,7 +68,7 @@ Mesa中的数据是持续生成的，它是Google最大而且最有价值的数�
 
 键空间K和值空间V代表着每个列的多个元组，每个元组有一个固定的类型（例如int32、int64、字符串等等）。Schema为每个独立的值列指定了一个相关的聚合函数，而F是隐式定义为智能聚合坐标的值列，例如：F((x1,...,xk),(y1,...,yk)) = (f1(x1,y1),...,fk(xk,yk))，其中(x1,...,xk),(y1,...,yk) ∈ V是列值的任意两个元组，而且f1到fk是Schema为每个值列显示定义的。
 
-![](https://raw.githubusercontent.com/tobegit3hub/experience/master/image/Mesa1.png)
+![](mesa/Mesa1.png)
 
 举个例子，图1显示了三个Mesa表。这三个表都包含了广告点击和成本指标（值列），而且通过各种属性细分了，例如点击的数据、广告商、展示这个广告的网站和国家（键列）。这个用于所有值列的聚合函数就是SUM累加。所有指标在这三个表中是一致的，假设相同的底层事件在所有的这些表更新了数据。图1是Mesa表Schema的简化视图。在生产环境中，Mesa包含超过一千个表，大部分的表拥有数百个列，而且使用各种聚合函数。
 
@@ -78,7 +78,7 @@ Mesa中的数据是持续生成的，它是Google最大而且最有价值的数�
 
 对Mesa的一个查询操作包含一个版本号n和在键空间的一个谓词P。而响应包含对于每个匹配P的键的一行，它出现在版本在0到n的更新中。响应中一个键的值是聚合了在那些更新中的所有值。Mesa实际上支持比这个更复杂的请求功能，但这些全部都能看做是这个原语的前置操作和后置操作。
 
-![](https://raw.githubusercontent.com/tobegit3hub/experience/master/image/Mesa2.png)
+![](mesa/Mesa2.png)
 
 举个例子，图2显示了两个针对图1定义的表的更新操作，当聚合在表A、B和C。为了维护表的一致性（在2.1部分讨论到），每个更新操作包含两个表A和B的一致行行。Mesa自动对表B处理这些更新操作，因为它们能直接从表B的更新中衍生出来。理论上，单个更新操作包括广告ID和出版商ID属性能够用于更新三个表，但那样的操作太重了，尤其是在更通用的例子中各个表都有很多属性（例如是一个交叉的产品）。
 
@@ -104,7 +104,7 @@ Mesa允许用户在一个特定的版本中查询一个限制的时间段（例�
 
 增量合并策略决定了当时由Mesa维护的增量集。它的主要目的是均衡一次查询所必须做的处理，对更新带来的延时可以加入到Mesa的增量中，与生成和维护增量相关的处理和存储开销也是。更具体的是，增量策略决定了：（1）什么增量（不包括单体）必须在允许更新版本来查询（在更新路径中同步，查询更快的同时减缓更新）之前产生。（2）什么增量应该在更新路径外异步地生成。（3）什么时候能够删除增量。
 
-![](https://raw.githubusercontent.com/tobegit3hub/experience/master/image/Mesa3.png)
+![](mesa/Mesa3.png)
 
 增量合并策略的一个例子是在图3显示的两层策略。在这个策略例子中，在时间的任意点有一个基准增量[0, B]，累计增量的版本[B + 1, B + 10]、[B + 1, B + 20]、[B + 1, B + 30]等等，而每个版本的单体增量都大于B。累计的[B+1, B+10x]在版本B+10x出现后尽快地异步生成。阿哥新的基准增量[0, B′]大约每天都会计算，但新的基准增量知道与它相关的B′生成后才能被使用。当基准版本B变为B′，这个策略删除旧的基准、旧的累计增量和所有版本小于或者等于B′的单体。然后一个查询将调用基准、一个累计数和一些单体，并减少在查询时间内的工作量。
 
@@ -128,7 +128,7 @@ Mesa是使用Google通用的基础架构和服务构建的，包括BigTable[12]�
 
 每个Mesa实体是由两个子系统组合而成：跟新管理和查询系统。这些子系统是解耦的，允许他们独自拓展。所有持久化的元数据都存储在Bigtable而所有的数据文件都存在Colossus。对于运行的正确性，这两个子系统之间不需要直接的通信。
 
-![](https://raw.githubusercontent.com/tobegit3hub/experience/master/image/Mesa4.png)
+![](mesa/Mesa4.png)
 
 #### 3.1.1 更新和维护子系统
 
@@ -148,7 +148,7 @@ Mesa是使用Google通用的基础架构和服务构建的，包括BigTable[12]�
 
 #### 3.1.2 查询子系统
 
-![](https://raw.githubusercontent.com/tobegit3hub/experience/master/image/Mesa5.png)
+![](mesa/Mesa5.png)
 
 Mesa的查询子系统包括查询服务器、展示在图5中。这些服务器接受用户的查询、寻找表的元数据确定要求的数据所存储的文件集、执行这些数据的聚合和在发送数据块给客户端之前从Mesa内部的格式转换为客户端协议的格式。Mesa的查询服务器提供了一个有限制的查询引擎，它仅支持服务端条件的过滤器和分组的聚合。高层次的数据库引擎例如MySQL [3], F1 [41], and Dremel [37]使用这些原语来提供更丰富的SQL功能例如关联（译者注join）查询。
 
@@ -162,7 +162,7 @@ Mesa为了提供高可用性，它能够部署在全球各个大区中。每个�
 
 #### 3.2.1 一致性更新机制
 
-![](https://raw.githubusercontent.com/tobegit3hub/experience/master/image/Mesa6.png)
+![](mesa/Mesa6.png)
 
 在Mesa中所有表都是有多个版本的，允许Mesa在之前的状态中继续提供一致的数据，即使有新的更新正在被执行。一个上流应用批量地生成更新要加入Mesa的数据，一般是每个几分钟一次。正如表6所展示的那样，Mesa的提交负责对全世界所有Mesa实例协调更新操作，每次一个版本。提交者为每次批量更新分配一个新的版本号，并发布与这次更新相关的所有元数据（例如这个文件包含的更新数据的位置），给版本数据库，这是基于Paxos[35]一致性算法的一个全球同步和一致性数据存储。提交者本身是无状态的，给定运行在多个数据中心的实例来保证高可用性。
 
@@ -246,27 +246,27 @@ Mesa在云端使用了上万台服务器，他们都是独立管理，并且在G
 
 ### 6.1 更新操作
 
-![](https://raw.githubusercontent.com/tobegit3hub/experience/master/image/Mesa7.png)
+![](mesa/Mesa7.png)
 
 图7展示了Mesa在七天的周期中一个数据中心内的更新性能。Mesa支持数百个并发的更新数据源。对于这个特别的数据源，Mesa平均每秒读取30到60MB的压缩数据，更新300到600万独立的行和增加大约30万新的行数据。这个数据源大约每5分钟产生批量更新操作，而Mesa提交时间的平均值和95%百分比之下分别是54秒和211秒。Mesa会管理这些更新延时，避免更新操作由于动态拓展资源而积压下来。
 
 ### 6.2 请求操作
 
-![](https://raw.githubusercontent.com/tobegit3hub/experience/master/image/Mesa8.png)
+![](mesa/Mesa8.png)
 
 图8展示了Mesa在与前面相同数据源7天内的请求性能。Mesa每天处理这些表超过5亿的请求，放回1.7T到3.2T行。这些产品查询的本源差异非常大，从简单的单点查询到大规模遍历。我们汇报他们平均和99%一下的延时，这显示了Mesa能在几百毫秒内响应大部分的查询。而导致平均和最大延时的巨大差异的因素有很多，包括请求的类型，请求服务器缓存的内容，瞬间的故障和云平台基础架构各层次的重试，甚至是偶然遇到很慢的服务器。
 
-![](https://raw.githubusercontent.com/tobegit3hub/experience/master/image/Mesa9.png)
+![](mesa/Mesa9.png)
 
 图9展示了处理请求的开销和同样是7天内我们在4.1部分讨论过的遍历查询优化效果。返回的行大概只有30%到50%读是由于版本合并和请求指定的过滤。遍历查询优化避免了解压和读60%到70%的本来需要处理的版本化行。
 
-![](https://raw.githubusercontent.com/tobegit3hub/experience/master/image/Mesa10.png)
+![](mesa/Mesa10.png)
 
 在图10，我们报告了Mesa查询服务器的可拓展属性。Mesa的设计允许组件通过参数化资源来独立地拓展。在这个检验中，我们假设请求吞吐量的服务器从4增加到128.这个结果确定了Mesa请求处理能力的线性拓展。
 
 ### 6.3 增长
 
-![](https://raw.githubusercontent.com/tobegit3hub/experience/master/image/Mesa11.png)
+![](mesa/Mesa11.png)
 
 图11展示了Mesa在24个月的周期中数据和CPU使用率的增长，这也是我们最大的生产数据集之一。总的数据量增加了几乎有5倍，通过更新率（这增加了超过80%）和增加的新表、索引和物化视图。CPU使用有着相似的提高，但也受到一次性的运算例如改变Schema和我们过去部署时优化的影响。图11也包括了用一个监控工具测量很稳定的延时，它通过不断旁路请求服务器的缓存来定位综合的单点查询。事实上，在这个阶段Mesa响应用户单点查询的演示和图8显示在维护一个相似的返回大量行是一致的。
 
@@ -294,7 +294,56 @@ Google其他内部的数据解决方案[11, 12, 18, 41]都不能支持Google广�
 
 ## 10. 引用
 
-[1] HBase.http://hbase.apache.org/.  [2] LevelDB. http://en.wikipedia.org/wiki/LevelDB.  [3] MySQL. http:www.mysql.com.  [4] Pro ject Voldemart: A Distributed Database. http://www.project-voldemort.com/voldemort/.  [5] SAP HANA. http://www.saphana.com/welcome.  [6] A. Abouzeid, K. Bajda-Pawlikowski, et al. HadoopDB: An Architectural Hybrid of MapReduce and DBMS Technologies for Analytical Workloads. PVLDB, 2(1):922–933, 2009.  [7] D. Agrawal, A. El Abbadi, et al. Efficient View Maintenance at Data Warehouses. In SIGMOD, pages 417–427, 1997.  [8] P. Agrawal, A. Silberstein, et al. Asynchronous View Maintenance for VLSD Databases. In SIGMOD, pages 179–192, 2009.  [9] M. O. Akinde, M. H. Bohlen, et al. Efficient OLAP Query Processing in Distributed Data Warehouses. Information Systems, 28(1-2):111–135, 2003.  [10] M. Athanassoulis, S. Chen, et al. MaSM: Efficient Online Updates in Data Warehouses. In SIGMOD, pages 865–876, 2011.  [11] J. Baker, C. Bond, et al. Megastore: Providing Scalable, Highly Available Storage for Interactive Services. In CIDR, pages 223–234, 2011.  [12] F. Chang, J. Dean, et al. Bigtable: A Distributed Storage System for Structured Data. In OSDI, pages 205–218, 2006.  [13] B. Chattopadhyay, L. Lin, et al. Tenzing A SQL Implementation on the MapReduce Framework. PVLDB, 4(12):1318–1327, 2011.  [14] S. Chaudhuri and U. Dayal. An Overview of Data Warehousing and OLAP Technology. SIGMOD Rec., 26(1):65–74, 1997.  [15] S. Chen, B. Liu, et al. Multiversion-Based View Maintenance Over Distributed Data Sources. ACM TODS, 29(4):675–709, 2004.  [16] J. Cohen, J. Eshleman, et al. Online Expansion of Largescale Data Warehouses. PVLDB, 4(12):1249–1259, 2011.  [17] B. F. Cooper, R. Ramakrishnan, et al. PNUTS: Yahoo!’s Hosted Data Serving Platform. PVLDB, 1(2):1277–1288, 2008.  [18] J. C. Corbett, J. Dean, et al. Spanner: Google’s Globally-Distributed Database. In OSDI, pages 251–264, 2012.  [19] J. Dean and S. Ghemawat. MapReduce: Simplified Data Processing on Large Clusters. Commun. ACM, 51(1):107–113, 2008.  [20] G. DeCandia, D. Hastorun, et al. Dynamo: Amazon’s Highly Available Key-value Store. In SOSP, pages 205–220, 2007.  [21] P. Deshpande, K. Ramasamy, et al. Caching Multidimensional Queries Using Chunks. In SIGMOD, pages 259–270, 1998.  [22] A. Fikes. Storage Architecture and Challenges. http://goo.gl/pF6kmz, 2010.  [23] S. Ghemawat, H. Gobioff, et al. The Google File System. In SOSP, pages 29–43, 2003.  [24] L. Glendenning, I. Beschastnikh, et al. Scalable Consistency in Scatter. In SOSP, pages 15–28, 2011.  [25] J. Gray, A. Bosworth, et al. Data Cube: A Relational Aggregation Operator Generalizing Group-By, Cross-Tabs and Sub-Totals. In IEEE ICDE, pages 152–159, 1996.  [26] H. Gupta and I. S. Mumick. Selection of Views to Materialize Under a Maintenance Cost Constraint. In ICDT, 1999.  [27] V. Harinarayan, A. Rajaraman, et al. Implementing Data Cubes Efficiently. In SIGMOD, pages 205–216, 1996.  [28] S. H ́eman, M. Zukowski, et al. Positional Update Handling in Column Stores. In SIGMOD, pages 543–554, 2010.  
-[29] H. V. Jagadish, L. V. S. Lakshmanan, and D. Srivastava. Snakes and Sandwiches: Optimal Clustering Strategies for a Data Warehouse. In SIGMOD, pages 37–48, 1999.  [30] H. V. Jagadish, I. S. Mumick, et al. View Maintenance Issues for the Chronicle Data Model. In PODS, pages 113–124, 1995.  [31] A. Koeller and E. A. Rundensteiner. Incremental Maintenance of Schema-Restructuring Views in SchemaSQL. IEEE TKDE, 16(9):1096–1111, 2004.  [32] L. V. S. Lakshmanan, J. Pei, et al. Quotient cube: How to Summarize the Semantics of a Data Cube. In VLDB, pages 778–789, 2002.  [33] L. V. S. Lakshmanan, J. Pei, et al. QC-Trees: An Efficient Summary Structure for Semantic OLAP. In SIGMOD, pages 64–75, 2003.  [34] A. Lamb, M. Fuller, et al. The Vertica Analytic Database: C-Store 7 Years Later. PVLDB, 5(12):1790–1801, 2012.  [35] L. Lamport. The Part-Time Parliament. ACM Trans. Comput. Syst., 16(2):133–169, 1998.  [36] G. Lee, J. Lin, et al. The Unified Logging Infrastructure for Data Analytics at Twitter. PVLDB, 5(12):1771–1780, 2012.  [37] S. Melnik, A. Gubarev, et al. Dremel: Interactive Analysis of Web-Scale Datasets. PVLDB, 3(1-2):330–339, 2010.  [38] N. Roussopoulos, Y. Kotidis, et al. Cubetree: Organization of and Bulk Incremental Updates on the Data Cube. In SIGMOD, pages 89–99, 1997.  [39] K. Salem, K. Beyer, et al. How To Roll a Join: Asynchronous Incremental View Maintenance. In SIGMOD, pages 129–140, 2000.  [40] D. Severance and G. Lohman. Differential Files: Their Application to the Maintenance of Large Databases. ACM Trans. Database Syst., 1(3):256–267, 1976.  [41] J. Shute, R. Vingralek, et al. F1: A Distributed SQLDatabase That Scales. PVLDB, 6(11):1068–1079, 2013. [42] Y. Sismanis, A. Deligiannakis, et al. Dwarf: Shrinking the PetaCube. In SIGMOD, pages 464–475, 2002.  [43] D. Srivastava, S. Dar, et al. Answering Queries with Aggregation Using Views. In VLDB, pages 318–329, 1996. [44] M. Stonebraker, D. J. Abadi, et al. C-Store: A Column-oriented DBMS. In VLDB, pages 553–564, 2005. [45] A. Thusoo, J. Sarma, et al. Hive: A Warehousing Solution Over a Map-Reduce Framework. PVLDB, 2(2):1626–1629, 2009.  [46] A. Thusoo, J. Sarma, et al. Hive - A Petabyte Scale Data Warehouse Using Hadoop. In IEEE ICDE, pages 996–1005, 2010.  
-[47] A. Thusoo, Z. Shao, et al. Data Warehousing and Analytics Infrastructure at Facebook. In SIGMOD, pages 1013–1020, 2010.  [48] R. Weiss. A Technical Overview of the Oracle Exadata Database Machine and Exadata Storage Server. Oracle White Paper. Oracle Corporation, Redwood Shores, 2012.   
-[49] P. Wong, Z. He, et al. Parallel Analytics as a Service. In SIGMOD, pages 25–36, 2013.  [50] L. Wu, R. Sumbaly, et al. Avatara: OLAP for Web-Scale Analytics Products. PVLDB, 5(12):1874–1877, 2012.  [51] R. S. Xin, J. Rosen, et al. Shark: SQL and Rich Analytics at Scale. In SIGMOD, pages 13–24, 2013.  [52] J. Yang, K. Karlapalem, et al. Algorithms for Materialized View Design in Data Warehousing Environment. In VLDB, pages 136–145, 1997.  [53] Y. Zhuge, H. Garcia-Molina, et al. The Strobe Algorithms for Multi-Source Warehouse Consistency. In PDIS, pages 146–157, 1996.
+* [1] HBase.http://hbase.apache.org/.
+* [2] LevelDB. http://en.wikipedia.org/wiki/LevelDB.
+* [3] MySQL. http:www.mysql.com.
+* [4] Pro ject Voldemart: A Distributed Database. http://www.project-voldemort.com/voldemort/.
+* [5] SAP HANA. http://www.saphana.com/welcome.
+* [6] A. Abouzeid, K. Bajda-Pawlikowski, et al. HadoopDB: An Architectural Hybrid of MapReduce and DBMS Technologies for Analytical Workloads. PVLDB, 2(1):922–933, 2009.
+* [7] D. Agrawal, A. El Abbadi, et al. Efficient View Maintenance at Data Warehouses. In SIGMOD, pages 417–427, 1997.
+* [8] P. Agrawal, A. Silberstein, et al. Asynchronous View Maintenance for VLSD Databases. In SIGMOD, pages 179–192, 2009.
+* [9] M. O. Akinde, M. H. Bohlen, et al. Efficient OLAP Query Processing in Distributed Data Warehouses. Information Systems, 28(1-2):111–135, 2003.
+* [10] M. Athanassoulis, S. Chen, et al. MaSM: Efficient Online Updates in Data Warehouses. In SIGMOD, pages 865–876, 2011.
+* [11] J. Baker, C. Bond, et al. Megastore: Providing Scalable, Highly Available Storage for Interactive Services. In CIDR, pages 223–234, 2011.
+* [12] F. Chang, J. Dean, et al. Bigtable: A Distributed Storage System for Structured Data. In OSDI, pages 205–218, 2006.
+* [13] B. Chattopadhyay, L. Lin, et al. Tenzing A SQL Implementation on the MapReduce Framework. PVLDB, 4(12):1318–1327, 2011.
+* [14] S. Chaudhuri and U. Dayal. An Overview of Data Warehousing and OLAP Technology. SIGMOD Rec., 26(1):65–74, 1997.
+* [15] S. Chen, B. Liu, et al. Multiversion-Based View Maintenance Over Distributed Data Sources. ACM TODS, 29(4):675–709, 2004.
+* [16] J. Cohen, J. Eshleman, et al. Online Expansion of Largescale Data Warehouses. PVLDB, 4(12):1249–1259, 2011.
+* [17] B. F. Cooper, R. Ramakrishnan, et al. PNUTS: Yahoo!’s Hosted Data Serving Platform. PVLDB, 1(2):1277–1288, 2008.
+* [18] J. C. Corbett, J. Dean, et al. Spanner: Google’s Globally-Distributed Database. In OSDI, pages 251–264, 2012.
+* [19] J. Dean and S. Ghemawat. MapReduce: Simplified Data Processing on Large Clusters. Commun. ACM, 51(1):107–113, 2008.
+* [20] G. DeCandia, D. Hastorun, et al. Dynamo: Amazon’s Highly Available Key-value Store. In SOSP, pages 205–220, 2007.
+* [21] P. Deshpande, K. Ramasamy, et al. Caching Multidimensional Queries Using Chunks. In SIGMOD, pages 259–270, 1998.
+* [22] A. Fikes. Storage Architecture and Challenges. http://goo.gl/pF6kmz, 2010.
+* [23] S. Ghemawat, H. Gobioff, et al. The Google File System. In SOSP, pages 29–43, 2003.
+* [24] L. Glendenning, I. Beschastnikh, et al. Scalable Consistency in Scatter. In SOSP, pages 15–28, 2011.
+* [25] J. Gray, A. Bosworth, et al. Data Cube: A Relational Aggregation Operator Generalizing Group-By, Cross-Tabs and Sub-Totals. In IEEE ICDE, pages 152–159, 1996.
+* [26] H. Gupta and I. S. Mumick. Selection of Views to Materialize Under a Maintenance Cost Constraint. In ICDT, 1999.
+* [27] V. Harinarayan, A. Rajaraman, et al. Implementing Data Cubes Efficiently. In SIGMOD, pages 205–216, 1996.
+* [28] S. H ́eman, M. Zukowski, et al. Positional Update Handling in Column Stores. In SIGMOD, pages 543–554, 2010.  
+* [29] H. V. Jagadish, L. V. S. Lakshmanan, and D. Srivastava. Snakes and Sandwiches: Optimal Clustering Strategies for a Data Warehouse. In SIGMOD, pages 37–48, 1999.
+* [30] H. V. Jagadish, I. S. Mumick, et al. View Maintenance Issues for the Chronicle Data Model. In PODS, pages 113–124, 1995.
+* [31] A. Koeller and E. A. Rundensteiner. Incremental Maintenance of Schema-Restructuring Views in SchemaSQL. IEEE TKDE, 16(9):1096–1111, 2004.
+* [32] L. V. S. Lakshmanan, J. Pei, et al. Quotient cube: How to Summarize the Semantics of a Data Cube. In VLDB, pages 778–789, 2002.
+* [33] L. V. S. Lakshmanan, J. Pei, et al. QC-Trees: An Efficient Summary Structure for Semantic OLAP. In SIGMOD, pages 64–75, 2003.
+* [34] A. Lamb, M. Fuller, et al. The Vertica Analytic Database: C-Store 7 Years Later. PVLDB, 5(12):1790–1801, 2012.
+* [35] L. Lamport. The Part-Time Parliament. ACM Trans. Comput. Syst., 16(2):133–169, 1998.
+* [36] G. Lee, J. Lin, et al. The Unified Logging Infrastructure for Data Analytics at Twitter. PVLDB, 5(12):1771–1780, 2012.
+* [37] S. Melnik, A. Gubarev, et al. Dremel: Interactive Analysis of Web-Scale Datasets. PVLDB, 3(1-2):330–339, 2010.
+* [38] N. Roussopoulos, Y. Kotidis, et al. Cubetree: Organization of and Bulk Incremental Updates on the Data Cube. In SIGMOD, pages 89–99, 1997.  
+* [39] K. Salem, K. Beyer, et al. How To Roll a Join: Asynchronous Incremental View Maintenance. In SIGMOD, pages 129–140, 2000.
+* [40] D. Severance and G. Lohman. Differential Files: Their Application to the Maintenance of Large Databases. ACM Trans. Database Syst., 1(3):256–267, 1976.
+* [41] J. Shute, R. Vingralek, et al. F1: A Distributed SQL Database That Scales. PVLDB, 6(11):1068–1079, 2013.
+* [42] Y. Sismanis, A. Deligiannakis, et al. Dwarf: Shrinking the PetaCube. In SIGMOD, pages 464–475, 2002.
+* [43] D. Srivastava, S. Dar, et al. Answering Queries with Aggregation Using Views. In VLDB, pages 318–329, 1996.
+* [44] M. Stonebraker, D. J. Abadi, et al. C-Store: A Column-oriented DBMS. In VLDB, pages 553–564, 2005.
+* [45] A. Thusoo, J. Sarma, et al. Hive: A Warehousing Solution Over a Map-Reduce Framework. PVLDB, 2(2):1626–1629, 2009.
+* [46] A. Thusoo, J. Sarma, et al. Hive - A Petabyte Scale Data Warehouse Using Hadoop. In IEEE ICDE, pages 996–1005, 2010.  
+* [47] A. Thusoo, Z. Shao, et al. Data Warehousing and Analytics Infrastructure at Facebook. In SIGMOD, pages 1013–1020, 2010.
+* [48] R. Weiss. A Technical Overview of the Oracle Exadata Database Machine and Exadata Storage Server. Oracle White Paper. Oracle Corporation, Redwood Shores, 2012.   
+* [49] P. Wong, Z. He, et al. Parallel Analytics as a Service. In SIGMOD, pages 25–36, 2013.
+* [50] L. Wu, R. Sumbaly, et al. Avatara: OLAP for Web-Scale Analytics Products. PVLDB, 5(12):1874–1877, 2012.
+* [51] R. S. Xin, J. Rosen, et al. Shark: SQL and Rich Analytics at Scale. In SIGMOD, pages 13–24, 2013.
+* [52] J. Yang, K. Karlapalem, et al. Algorithms for Materialized View Design in Data Warehousing Environment. In VLDB, pages 136–145, 1997.
+* [53] Y. Zhuge, H. Garcia-Molina, et al. The Strobe Algorithms for Multi-Source Warehouse Consistency. In PDIS, pages 146–157, 1996.
