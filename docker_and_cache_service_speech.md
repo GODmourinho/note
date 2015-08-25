@@ -1,0 +1,27 @@
+这期我们与大家分享的主题是“Docker与缓存服务”。
+
+首先介绍一下UnitedStack和OpenStack对Docker的支持。在2014年9月我们上线了CoreOS镜像，很多开发者都支持CoreOS是第一个也是目前最流行的为容器优化的操作系统，UnitedStack是国内第一个支持CoreOS的IaaS厂商，并且发布了《在UOS上体验CoreOS》和《从运维角度看CoreOS》两篇文章。
+
+在2015年6月我们还上线了Fedora Atomic镜像，这是开源巨头Redhat力推的容器操作系统，我们也是国内首家支持Atomic镜像的基础云服务厂商，并且是国内唯一一家同时支持CoreOS和Atomic系统的服务商。
+
+目前我们也积极与Docker创业公司合作，为Docker爱好者提供最好的基础服务。在未来，我们将基于Magnum项目提供像亚马逊ECS这样的容器服务，打造容器与虚机结合的良好生态。
+
+这次分享的第二部分是介绍基于Docker和Trove实现的缓存服务。缓存服务，就是将缓存实例像水电那样交付给用户，一个基本的缓存服务应该支持通过Web UI或API来管理实例。并且提供启动、停止、重启实例等功能，可以随时添加replication从节点，可以修改实例的配置，可以随时扩容，并且由系统实现监控功能。
+
+我们的UOS缓存服务已经能支持上述功能，我们还做了什么呢？首先将服务的启动时间优化到10秒以内，用户的单个集群可以轻松突破一百万读QPS，并且缓存数据持久化到SSD，而服务的安全由Neutron实现的SDN网络来支持。
+
+前面提到我们的缓存服务是基于Trove和Docker实现的，那么Trove是什么呢？Trove是OpenStack中Database as a Service的服务，它是可拓展的可靠的服务，支持多租户和资源隔离，提供的数据库服务解放了DBA的运维，最重要的是它支持关系型数据库和非关系型数据库。Trove的基本框架包括trove-api、taskmanager和guestmanager，其中用户通过界面或RESTful请求trove-api，然后转发给taskmanager，由taskmanager执行重启缓存实例、修改配置等操作，而真正发送命令重启实例的操作时在虚拟机内部的guestagent。基于Trove框架，我们很容易就可以实现Cache as a Service了，那么我们是如何结合Docker的呢？
+
+从第一个维度，我们使用Docker容器化所有Trove的进程，通过在容器的隔离我们实现了更灵活的开发环境。我们组内多个开发者使用的Trove代码不同，使用Docker封装后可以快速启停容器，多人开发也能互不干扰。
+
+第二个维度是我们在未来计划实现guestagent container，前面提到过我们使用虚拟机来隔离缓存实例的环境，这样可以带来更安全的资源隔离，但也有更大的overhead。如果使用Docker，可以让缓存服务的启动时间进一步缩短，并且带来更平滑的扩容操作。
+
+对于Trove这个开源项目，我们做了很多工作，其中包括实现的Redis的后端，并且将数据库的监控集成到Ceilometer上，还写了Dockerfile将进程运行在容器内。这些工作，我们未来都会开源到 https://github.com/unitedstack ，欢迎关注。
+
+最后介绍下我们未来的工作，首先是Dockerize everything，除了我们已经容器化的Trove服务，我们还计划将它所以来Nova、Glance等服务封装在容器内，这样任何开发者都可以在本地运行整个缓存服务了。其次是我们计划使用Docker这样轻量化的资源隔离技术，一旦两面两点都实现了，我们将开发自己的编排工具来调度这些容器服务。
+
+而我们分享的主题Cache as a Service for OpenStack with Trove and Docker也提交到OpenStack Summit的会议上，如果有机会在今年年底在日本东京可以分享下我们的实践与收获。
+
+
+
+
