@@ -71,7 +71,16 @@ ssh-keygen -t rsa
 cat ~/.ssh/id_rsa.pub* >> ~/.ssh/authorized_keys
 ssh-copy-id -i ~/.ssh/id_rsa.pub ntkhoa@192.168.85.136
 
-## Start slave manually
+## Add hostname to /etc/hosts
+
+## Start automatically
+
+Edit slaves.
+Edit spark-env.sh
+
+./sbin/start-all.sh
+
+## Start manually
 
 Edit the spark-env.sh and use ip in private network.
 
