@@ -6,15 +6,19 @@ Start ubuntu 14.04 in linode.
 
 ssh root@172.16.0.206
 
+```
 apt-get update -y
 apt-get install -y git
 apt-get install -y vim
+```
 
 ## Add user
 
+```
 git clone https://github.com/openstack-dev/devstack
 ./devstack/tools/create-stack-user.sh
 su stack
+```
 
 ## Configure devstack
 

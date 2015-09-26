@@ -209,6 +209,7 @@ sbin/start-yarn.sh
 bin/hdfs dfsadmin -report
 
 bin/hdfs dfs -mkdir -p /user/hadoop
+bin/hdfs dfs -mkdir -p input
 bin/hdfs dfs -put etc/hadoop input 
 bin/hadoop jar share/hadoop/mapreduce/hadoop-mapreduce-examples-2.7.1.jar grep input output 'dfs[a-z.]+'
 bin/hdfs dfs -cat output/*
