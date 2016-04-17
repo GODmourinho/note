@@ -105,7 +105,45 @@ It's possible to profile memory and CPU.
 
 Use gomobile.
 
+## Go profiling and benchmarking
+
+Let's get back to the fist time we learn programming, we learn less and know more.
+
+Use benchstat to compare the result of benchmark.
+
+Read the artitle "How to write benchmakrs in Go".
+
+Set the runtiem parameter to print all gc logs.
+
+Generating garbage slows the problem and we should not concate two string to generate the third.
+
+You should preallocate the capacity in memory if you know the length.
+
+Always set timeout and don't start io operations without knowing how much time it will take.
+
+Profile your code to identity the bottlenecks, do not guess.
+
+## Go in AliCloud CDN
+
+Use the traditional software like Squid, use lvs and haproxy.
+
+Use LVM, Tengine and their own cache service, swift in cache servers.
+
+From Hadoop to ODPS, which is developed by themself.
+
+Use machine learning to predict the traffic then preallocate the policy.
+
+We need monitor and metrics to know which one node is better and use it for others.
+
+The first thing if you have performance bottlenet is monitoring then optimize the code.
+
+Modify vcs.go to go get internal. Or monify gitlab to go get with the meta parameter. Or add new proxy.
+
+Pass the request id for every reqeust. Collect log to anylics.
 
 
- 
+## Go in Xiami Website
+
+
+
  
