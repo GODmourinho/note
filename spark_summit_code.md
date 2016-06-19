@@ -1,2 +1,0 @@
-
-DatabricksSF20
